@@ -231,7 +231,8 @@ public class GenerateSqlMapperUtil {
 		}
 
 		{
-
+			apd(sb, 1, "<!--  The above part is the Uow core dependent on, don't change it  -->");
+			apd(sb, 1, "<!--  以上部分是UoW模块运作所需要的，请勿修改 -->");
 		}
 
 		return sb.toString();
