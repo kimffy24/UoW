@@ -2,7 +2,7 @@ package com.github.kimffy24.uow.config;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfigureOrder;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -27,7 +27,7 @@ public class StarterAutoConfigure {
     @Bean
     @ConditionalOnMissingBean
     CommittingService provideCommittingService(BeanFactory beanFactory){
-		DefaultListableBeanFactory listableBeanFactory = (DefaultListableBeanFactory)beanFactory;
+    	AutowireCapableBeanFactory listableBeanFactory = (AutowireCapableBeanFactory)beanFactory;
 		return listableBeanFactory.createBean(CommittingService.class);
     }
 
@@ -35,7 +35,7 @@ public class StarterAutoConfigure {
     @Bean
     @ConditionalOnMissingBean
     SpringUoWMapperBinder provideSpringUoWMapperBinder(BeanFactory beanFactory){
-		DefaultListableBeanFactory listableBeanFactory = (DefaultListableBeanFactory)beanFactory;
+    	AutowireCapableBeanFactory listableBeanFactory = (AutowireCapableBeanFactory)beanFactory;
 		return listableBeanFactory.createBean(SpringUoWMapperBinder.class);
     }
 
@@ -43,7 +43,7 @@ public class StarterAutoConfigure {
     @Bean
     @ConditionalOnMissingBean
     RepositoryHub provideRepositoryHub(BeanFactory beanFactory){
-		DefaultListableBeanFactory listableBeanFactory = (DefaultListableBeanFactory)beanFactory;
+    	AutowireCapableBeanFactory listableBeanFactory = (AutowireCapableBeanFactory)beanFactory;
 		return listableBeanFactory.createBean(RepositoryHub.class);
     }
 
@@ -51,7 +51,7 @@ public class StarterAutoConfigure {
     @Bean
     @ConditionalOnMissingBean
     ExecutingContextFactory provideExecutingContextFactory(BeanFactory beanFactory){
-		DefaultListableBeanFactory listableBeanFactory = (DefaultListableBeanFactory)beanFactory;
+    	AutowireCapableBeanFactory listableBeanFactory = (AutowireCapableBeanFactory)beanFactory;
 		return listableBeanFactory.createBean(ExecutingContextFactory.class);
     }
 }

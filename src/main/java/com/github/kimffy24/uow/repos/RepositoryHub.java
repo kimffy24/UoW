@@ -22,12 +22,19 @@ import com.github.kimffy24.uow.util.KeyMapperStore.Item;
 import com.github.kimffy24.uow.util.KeyMapperStore.KMStore;
 
 import pro.jk.ejoker.common.system.enhance.MapUtilx;
+import pro.jk.ejoker.common.system.enhance.StringUtilx;
+import pro.jk.ejoker.common.system.functional.IVoidFunction1;
 
 public class RepositoryHub {
 	
 	private final static KMStore KMInstance = KeyMapperStore.getIntance();
 	
 	private StdConverter stdConverter = StdConverter.getInstance();
+	
+	/**
+	 *  数据库直接出的类型无法转java基本类型，导致报错，释放出使用自定义的转换方法的入口
+	 */
+	private Map<Class<?>, IVoidFunction1<Map<String, Object>>> preModifierStore = new ConcurrentHashMap<>();
 	
 	@Autowired
 	private SpringUoWMapperBinder springUoWMapperBinder;
@@ -39,6 +46,13 @@ public class RepositoryHub {
 	@SuppressWarnings("unchecked")
 	public <A extends AbstractAggregateRoot<?>> Repository<A> getRepos(Class<A> aggrType) {
 		return (Repository<A> )MapUtilx.getOrAdd(reposStore, aggrType, () -> new Repository<>(aggrType));
+	}
+	
+	public void registerOncePreModifier(Class<?> t, IVoidFunction1<Map<String, Object>> m) {
+		IVoidFunction1<Map<String, Object>> previous = this.preModifierStore.putIfAbsent(t, m);
+		if(null != previous) {
+			throw new RuntimeException(StringUtilx.fmt("Multi preModifier is set!!! [type: {}]", t.getName()));
+		}
 	}
 	
  	public final class Repository<T extends AbstractAggregateRoot<?>> {
@@ -72,6 +86,11 @@ public class RepositoryHub {
 				}
 			}
 			
+			IVoidFunction1<Map<String, Object>> preModifier = RepositoryHub.this.preModifierStore.get(this.aggrRootType);
+			if(null != preModifier) {
+				preModifier.trigger(reMap);
+			}
+			
 			Iterator<Map.Entry<String, Object>> iterator = reMap.entrySet().iterator();
 			while(iterator.hasNext()) {
 				Map.Entry<String, Object> entry = iterator.next();
@@ -88,6 +107,12 @@ public class RepositoryHub {
 			return revertToAggr(reMap);
 		}
 	
+		/**
+		 * 按照match中的key=value多个条件，捞出符合条件的实例对象<br />
+		 * @deprecated 请尽量通过id捞对象数据
+		 * @param match
+		 * @return
+		 */
 		public List<T> fetchMatched(Map<String, Object> match) {
 			ILocatorMapper provideLocatorMapper = springUoWMapperBinder.getAggrMapper(aggrRootType);
 			List<Map<String, Object>> mi = provideLocatorMapper.locateId(match);
@@ -100,10 +125,10 @@ public class RepositoryHub {
 	//		Map<String, Object> convert = stdConverter.convert(aggr);
 	//		// 由于spring三层架构的基因问题 ，不好支持， Repository 的 收录对象的功能有context承担.
 	//	}
-	
-		public Class<?> getIdType() {
-			return aggrRootType;
-		}
+//	
+//		public Class<?> getIdType() {
+//			return aggrRootType;
+//		}
 		
 		public Map<String, Object> getAggrOriginalDict(AbstractAggregateRoot<?> aggr) {
 			return AggregateActionBinder.getOriginalDict(aggr);

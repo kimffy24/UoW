@@ -11,6 +11,7 @@ import com.github.kimffy24.uow.skeleton.AbstractAggregateRoot;
 
 import pro.jk.ejoker.common.system.enhance.StringUtilx;
 
+@Deprecated
 public abstract class AbstractUoWService {
 
 	@Autowired

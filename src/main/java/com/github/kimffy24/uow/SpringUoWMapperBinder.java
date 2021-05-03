@@ -25,6 +25,12 @@ public class SpringUoWMapperBinder implements ApplicationContextAware {
 		this.applicationContext = applicationContext;
 	}
 	
+	/**
+	 * 从给定的聚合根类，找出对应的mapper对象<br />
+	 * * 从聚合根类找出RBind注解，从注解中找出声明的Mapper类的，再从spring上下文中找出该Mapper类的实例对象。
+	 * @param aggrType
+	 * @return
+	 */
 	public ILocatorMapper getAggrMapper(Class<?> aggrType) {
 		ILocatorMapper iLocatorMapper = mapperStore.get(aggrType);
 		if(null == iLocatorMapper) {
