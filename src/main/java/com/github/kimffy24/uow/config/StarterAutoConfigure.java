@@ -10,10 +10,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.github.kimffy24.uow.CommittingService;
-import com.github.kimffy24.uow.ExecutingContextFactory;
-import com.github.kimffy24.uow.SpringUoWMapperBinder;
-import com.github.kimffy24.uow.repos.RepositoryHub;
+import com.github.kimffy24.uow.core.ExecutingContextFactory;
+import com.github.kimffy24.uow.service.CommittingService;
+import com.github.kimffy24.uow.service.RepositoryProvider;
+import com.github.kimffy24.uow.service.SpringUoWMapperProvider;
 
 @Configuration
 @ConditionalOnProperty(prefix = "com.github.kimffy24.uow", value = "enabled", havingValue = "true")
@@ -34,17 +34,17 @@ public class StarterAutoConfigure {
     @AutoConfigureOrder(3)
     @Bean
     @ConditionalOnMissingBean
-    SpringUoWMapperBinder provideSpringUoWMapperBinder(BeanFactory beanFactory){
+    SpringUoWMapperProvider provideSpringUoWMapperBinder(BeanFactory beanFactory){
     	AutowireCapableBeanFactory listableBeanFactory = (AutowireCapableBeanFactory)beanFactory;
-		return listableBeanFactory.createBean(SpringUoWMapperBinder.class);
+		return listableBeanFactory.createBean(SpringUoWMapperProvider.class);
     }
 
     @AutoConfigureOrder(4)
     @Bean
     @ConditionalOnMissingBean
-    RepositoryHub provideRepositoryHub(BeanFactory beanFactory){
+    RepositoryProvider provideRepositoryHub(BeanFactory beanFactory){
     	AutowireCapableBeanFactory listableBeanFactory = (AutowireCapableBeanFactory)beanFactory;
-		return listableBeanFactory.createBean(RepositoryHub.class);
+		return listableBeanFactory.createBean(RepositoryProvider.class);
     }
 
     @AutoConfigureOrder(5)

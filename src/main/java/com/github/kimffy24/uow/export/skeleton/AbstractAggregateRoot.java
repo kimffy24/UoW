@@ -1,9 +1,11 @@
-package com.github.kimffy24.uow.skeleton;
+package com.github.kimffy24.uow.export.skeleton;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.github.kimffy24.uow.core.AggregateActionBinder;
 
 import pro.jk.ejoker.common.context.annotation.persistent.PersistentIgnore;
 import pro.jk.ejoker.common.system.enhance.StringUtilx;
@@ -33,6 +35,11 @@ public class AbstractAggregateRoot<TID> {
 		if(null == aarParse)
 			return super.toString();
 		return aarParse._toStringFactor.trigger(this);
+	}
+	
+	protected AbstractAggregateRoot(TID id) {
+		this();
+		this.id = id;
 	}
 
 	protected AbstractAggregateRoot() {

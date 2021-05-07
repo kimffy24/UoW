@@ -1,4 +1,4 @@
-package com.github.kimffy24.uow;
+package com.github.kimffy24.uow.service;
 
 import static pro.jk.ejoker.common.system.enhance.StringUtilx.fmt;
 
@@ -10,11 +10,11 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
 import com.github.kimffy24.uow.annotation.RBind;
-import com.github.kimffy24.uow.mapper.ILocatorMapper;
+import com.github.kimffy24.uow.export.mapper.ILocatorMapper;
 
 import pro.jk.ejoker.common.system.enhance.MapUtilx;
 
-public class SpringUoWMapperBinder implements ApplicationContextAware {
+public class SpringUoWMapperProvider implements ApplicationContextAware {
 	
 	private final Map<Class<?>, ILocatorMapper> mapperStore = new ConcurrentHashMap<>();
 

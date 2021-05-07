@@ -1,4 +1,4 @@
-package com.github.kimffy24.uow.mapper;
+package com.github.kimffy24.uow.export.mapper;
 
 import java.util.List;
 import java.util.Map;

@@ -1,9 +1,9 @@
-package com.github.kimffy24.uow;
+package com.github.kimffy24.uow.export;
 
 import java.util.List;
 import java.util.Map;
 
-import com.github.kimffy24.uow.skeleton.AbstractAggregateRoot;
+import com.github.kimffy24.uow.export.skeleton.AbstractAggregateRoot;
 
 public interface IExecutingContext {
 	

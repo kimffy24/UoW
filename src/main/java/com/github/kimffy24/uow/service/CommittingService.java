@@ -1,4 +1,4 @@
-package com.github.kimffy24.uow;
+package com.github.kimffy24.uow.service;
 
 import javax.annotation.PostConstruct;
 
@@ -10,6 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
+
+import com.github.kimffy24.uow.core.ExecutingContextFactory;
+import com.github.kimffy24.uow.export.IExecutingContext;
 
 import pro.jk.ejoker.common.system.functional.IFunction1;
 import pro.jk.ejoker.common.system.functional.IVoidFunction1;
@@ -42,15 +45,25 @@ public class CommittingService {
 	 */
 	@Around("pointcut()")
 	public Object doAround(ProceedingJoinPoint joinPoint) throws Throwable {
+		return surroundExec(joinPoint::proceed);
+	}
+	
+	/**
+	 * 在AutoCommit上下文中执行闭包方法体
+	 * @param closure
+	 * @return
+	 * @throws Throwable
+	 */
+	public Object surroundExec(IClosure closure) throws Throwable {
 		Object res = null;
 		boolean isExitAutoCommit = false;
 		Throwable t = null;
 		try {
-			IExecutingContext currentContext = executingContextFactory.getCurrentContext();
+			IExecutingContext currentContext = executingContextFactory.getUoWContext(true);
 			MarkRound.trigger(currentContext);
-			res =  joinPoint.proceed();
+			res =  closure.exec();
 			if(isExitAutoCommit = ExitRoundAndCheckIsLatest.trigger(currentContext))
-				executingContextFactory.getCurrentContext().commit();
+				executingContextFactory.getUoWContext(false).commit();
 			return res;
 		} catch (Throwable _t) {
 			isExitAutoCommit = true;
@@ -91,4 +104,8 @@ public class CommittingService {
 		ExitRoundAndCheckIsLatest = exitRoundAndCheckIsLatest;
 	}
 	
+//	@FunctionalInterface
+	public static interface IClosure {
+		public Object exec() throws Throwable;
+	}
 }

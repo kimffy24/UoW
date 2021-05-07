@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 
-import com.github.kimffy24.uow.mapper.ILocatorMapper;
+import com.github.kimffy24.uow.export.mapper.ILocatorMapper;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @Target(ElementType.TYPE)

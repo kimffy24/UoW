@@ -1,4 +1,4 @@
-package com.github.kimffy24.uow.skeleton;
+package com.github.kimffy24.uow.export.skeleton;
 
 import java.util.Date;
 

@@ -1,4 +1,4 @@
-package com.github.kimffy24.uow;
+package com.github.kimffy24.uow.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,14 +12,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.PostConstruct;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.github.kimffy24.uow.component.StdConverter;
-import com.github.kimffy24.uow.mapper.ILocatorMapper;
-import com.github.kimffy24.uow.repos.RepositoryHub;
-import com.github.kimffy24.uow.repos.RepositoryHub.Repository;
-import com.github.kimffy24.uow.skeleton.AbstractAggregateRoot;
-import com.github.kimffy24.uow.skeleton.AggregateActionBinder;
+import com.github.kimffy24.uow.export.IExecutingContext;
+import com.github.kimffy24.uow.export.mapper.ILocatorMapper;
+import com.github.kimffy24.uow.export.skeleton.AbstractAggregateRoot;
+import com.github.kimffy24.uow.repos.Repository;
+import com.github.kimffy24.uow.service.CommittingService;
+import com.github.kimffy24.uow.service.RepositoryProvider;
 
 import pro.jk.ejoker.common.system.enhance.EachUtilx;
 import pro.jk.ejoker.common.system.enhance.MapUtilx;
@@ -28,12 +31,12 @@ import pro.jk.ejoker.common.system.functional.IVoidFunction1;
 
 public class ExecutingContextFactory {
 
-//	private static final Logger logger = LoggerFactory.getLogger(ExecutingContextFactory.class);
+	private static final Logger logger = LoggerFactory.getLogger(ExecutingContextFactory.class);
 	
 	private StdConverter stdConverter = StdConverter.getInstance();
 
 	@Autowired
-	private RepositoryHub reposHub;
+	private RepositoryProvider reposProvider;
 	
 	private ThreadLocal<IExecutingContext> tl = new ThreadLocal<>();
 	
@@ -53,17 +56,64 @@ public class ExecutingContextFactory {
 		ContextLocatorBinder.setOnce(this);
 	}
 	
+	public IExecutingContext getExecutingContext() {
+		IExecutingContext uoWContext;
+		return null != (uoWContext = getUoWContext(false)) ? uoWContext : new BasicExecutingContext();
+	}
+
 	/**
 	 * ExecutingContext 目前使用ThreadLocal绑定执行关系，因此不要在某个地方存下来，需要的时候通过调用获取以确保正确性
 	 * @return
 	 */
-	public IExecutingContext getCurrentContext() {
+	public IExecutingContext getUoWContext(boolean createNewIfNotFound) {
 		IExecutingContext cxt = tl.get();
-		if(null == cxt) {
+		if(null == cxt && createNewIfNotFound) {
 			cxt = new UoWContext();
 			tl.set(cxt);
 		}
 		return cxt;
+	}
+
+	public void cleanContext() {
+		tl.remove();
+	}
+	
+	
+	/**
+	 * 这个主要是提供给用户从数据库获取实例的能力
+	 * @author kimffy
+	 *
+	 */
+	public class BasicExecutingContext implements IExecutingContext {
+
+		@Override
+		public <T extends AbstractAggregateRoot<?>> T fetch(Object id, Class<T> prototype) {
+			Repository<T> repository = reposProvider.getRepos(prototype);
+			T fetch = repository.fetch(id);
+			return fetch;
+		}
+
+		@Override
+		public <T extends AbstractAggregateRoot<?>> List<T> fetchMatcheds(Map<String, Object> conditions,
+				Class<T> prototype) {
+			Repository<T> repository = reposProvider.getRepos(prototype);
+			List<T> fetchMatched = repository.fetchMatched(conditions);
+			return fetchMatched;
+		}
+
+		@Override
+		public void add(AbstractAggregateRoot<?> aggr) {
+			logger.warn("This context is not a UoWContext! This add() will do nothing ...");
+			// do nothing
+			
+		}
+
+		@Override
+		public void commit() {
+			logger.warn("This context is not a UoWContext! This commit() will do nothing ...");
+			// do nothing ...
+			
+		}
 	}
 	
 	/**
@@ -71,7 +121,7 @@ public class ExecutingContextFactory {
 	 * @author kimffy
 	 *
 	 */
-	public final class UoWContext implements IExecutingContext {
+	public final class UoWContext extends BasicExecutingContext {
 
 		/**
 		 * 深度计数器，供嵌套调用带有AutoCommit标记时使用。
@@ -103,11 +153,7 @@ public class ExecutingContextFactory {
 		@SuppressWarnings("unchecked")
 		@Override
 		public <T extends AbstractAggregateRoot<?>> T fetch(Object id, Class<T> prototype) {
-			return (T )MapUtilx.getOrAdd(trackingAggregates, getTypeIdKey(prototype, id), () -> {
-				Repository<T> repository = reposHub.getRepos(prototype);
-				T fetch = repository.fetch(id);
-				return fetch;
-			});
+			return (T )MapUtilx.getOrAdd(trackingAggregates, getTypeIdKey(prototype, id), () -> super.fetch(id, prototype));
 		}
 		
 		@SuppressWarnings("unchecked")
@@ -115,8 +161,7 @@ public class ExecutingContextFactory {
 		public <T extends AbstractAggregateRoot<?>> List<T> fetchMatcheds(
 				Map<String, Object> conditions,
 				Class<T> prototype) {
-			Repository<T> repository = reposHub.getRepos(prototype);
-			List<T> fetchMatched = repository.fetchMatched(conditions);
+			List<T> fetchMatched = super.fetchMatcheds(conditions, prototype);
 			List<T> newArrayList = new ArrayList<>();
 			EachUtilx.forEach(fetchMatched, a -> {
 				T previous = (T )trackingAggregates
@@ -147,7 +192,7 @@ public class ExecutingContextFactory {
 			
 			if(null != newAggr) {
 				// 新增
-				Repository<?> repository = reposHub.getRepos(newAggr.getClass());
+				Repository<?> repository = reposProvider.getRepos(newAggr.getClass());
 				ILocatorMapper provideLocatorMapper = repository.provideLocatorMapper();
 				Map<String, Object> convert = stdConverter.convert(newAggr);
 				convert.put("version", 1);
@@ -164,7 +209,7 @@ public class ExecutingContextFactory {
 							aggr.getId(),
 							aggr.getVersion()
 							));
-				Repository repository = reposHub.getRepos(aggr.getClass());
+				Repository repository = reposProvider.getRepos(aggr.getClass());
 				ILocatorMapper provideLocatorMapper = repository.provideLocatorMapper();
 
 				Map<String, Object> convert = stdConverter.convert(aggr);
@@ -220,10 +265,9 @@ public class ExecutingContextFactory {
 			}
 		}
 
-	}
-
-	public void cleanContext() {
-		tl.remove();
+		private String getTypeIdKey(Class<?> type, Object id) {
+			return id + "_" + type.getName();
+		}
 	}
 	
 	private final static class IdVersionTuple {
@@ -272,9 +316,6 @@ public class ExecutingContextFactory {
 		}
 	}
 	
-	public final static String getTypeIdKey(Class<?> type, Object id) {
-		return id + "_" + type.getName();
-	}
 	
 	public final static class ContextLocatorBinder {
 	
@@ -283,8 +324,13 @@ public class ExecutingContextFactory {
 		private ContextLocatorBinder() {}
 		
 		private synchronized static void setOnce(ExecutingContextFactory factory) {
-			if(null != FacInstance && !Objects.equals(FacInstance, factory))
-				throw new RuntimeException("Multi ExecutingContextFactory creation !!!");
+			if(null != FacInstance) {
+				if(!Objects.equals(FacInstance, factory))
+					throw new RuntimeException("Multi ExecutingContextFactory creation !!!");
+				else
+					return;
+			}
+			FacInstance = factory;
 		}
 		
 		public static ExecutingContextFactory getFacInstance() {

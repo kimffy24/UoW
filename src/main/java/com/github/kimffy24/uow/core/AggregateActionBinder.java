@@ -1,7 +1,9 @@
-package com.github.kimffy24.uow.skeleton;
+package com.github.kimffy24.uow.core;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.github.kimffy24.uow.export.skeleton.AbstractAggregateRoot;
 
 import pro.jk.ejoker.common.system.functional.IFunction1;
 import pro.jk.ejoker.common.system.functional.IVoidFunction1;
