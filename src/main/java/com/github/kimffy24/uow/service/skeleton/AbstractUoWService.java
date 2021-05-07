@@ -6,7 +6,6 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.github.kimffy24.uow.core.ExecutingContextFactory;
-import com.github.kimffy24.uow.export.IExecutingContext;
 import com.github.kimffy24.uow.export.skeleton.AbstractAggregateRoot;
 import com.github.kimffy24.uow.service.CommittingService;
 import com.github.kimffy24.uow.service.CommittingService.IClosure;
@@ -96,7 +95,6 @@ public abstract class AbstractUoWService {
 	 * @throws Throwable
 	 */
 	protected final void doUnderContext(IVoidFunction uf) throws Throwable {
-		IExecutingContext uoWContext = executingContextFactory.getUoWContext(true);
 		autoCommittingService.surroundExec(new IClosure() {
 			@Override
 			public Object exec() throws Throwable {

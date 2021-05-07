@@ -104,7 +104,7 @@ public class CommittingService {
 		ExitRoundAndCheckIsLatest = exitRoundAndCheckIsLatest;
 	}
 	
-//	@FunctionalInterface
+	@FunctionalInterface
 	public static interface IClosure {
 		public Object exec() throws Throwable;
 	}

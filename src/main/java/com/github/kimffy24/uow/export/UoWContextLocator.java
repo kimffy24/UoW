@@ -18,8 +18,4 @@ public final class UoWContextLocator {
 		IExecutingContext cxt = curr();
 		cxt.add(aggr);
 	}
-	
-	public static <T> AbstractAggregateRoot<T> fetch(T id, Class<? extends AbstractAggregateRoot<T>> aggrType) {
-		return curr().fetch(id, aggrType);
-	}
 }
