@@ -5,7 +5,7 @@
 
 	<groupId>com.github.kimffy24</groupId>
 	<artifactId>uow</artifactId>
-	<version>0.0.1</version>
+	<version>0.0.2</version>
 	<packaging>jar</packaging>
 
 	<name>uow</name>
@@ -17,7 +17,7 @@
 		<url>https://github.com/kimffy24/UoW</url>
 		<connection>scm:git:git@github.com:kimffy24/UoW.git</connection>
 		<developerConnection>scm:git:git@github.com:kimffy24/UoW.git</developerConnection>
-<tag>v0.0.1</tag>
+<tag>v0.0.2</tag>
 	</scm>
 	
 	<licenses>
