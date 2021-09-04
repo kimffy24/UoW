@@ -19,6 +19,10 @@ public class AbstractAggregateRootRL<TID> extends AbstractAggregateRoot<TID> {
 	public AbstractAggregateRootRL() {
 		super();
 	}
+
+	public void remove() {
+		this.markRemovedLogically();
+	}
 	
 	public void markRemovedLogically() {
 		this.deleted = 1;
