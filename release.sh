@@ -2,7 +2,7 @@
 
 ## --------- 控制流变量
 GIT_TAG_COMMIT="[#3] 发布脚本自动递进"
-LINE_NUM_TAG=18
+LINE_NUM_TAG=20
 
 
 ## --------- 方法定义、引入 (随项目变动的)
@@ -77,26 +77,25 @@ echo "Detect release version: ${VERSION_DEPLOY}"
 echo "Detect new tag name: ${VERSION_TAG}"
 echo "------"
 
+SED="sed"
+OS=`uname -s`
+if [ "Darwin" == ${OS} ] ; then
+    SED="gsed"
+fi
+LINE_NUM_TAG_NEW=$((LINE_NUM_TAG-1))
+$SED -i "${LINE_NUM_TAG}d ; ${LINE_NUM_TAG_NEW}a\<tag\>${VERSION_TAG}\<\/tag\>" pom.xml
+
 if [ "z${VERSION_CURR}" != "${VERSION_NEW}" ] ; then
     echo "!!! we will change version in your maven project, do you accept this action?"
     read -p "Input any key to continue or CRTL + c to break this script... " XYZ
     mvn versions:set -DnewVersion="${VERSION_NEW}"
 
-    SED="sed"
-    OS=`uname -s`
-    if [ "Darwin" == ${OS} ] ; then
-        SED="gsed"
-    fi
-    LINE_NUM_TAG_NEW=$((LINE_NUM_TAG-1))
-    $SED -i "${LINE_NUM_TAG}d ; ${LINE_NUM_TAG_NEW}a\<tag\>x\<\/tag\>" pom.xml
-
     git add .
 
-    git commit -m ${GIT_TAG_COMMIT}
+    git commit -m "${GIT_TAG_COMMIT}"
 fi
 
-read -p "Check info and input anything to continue OR ctrl+c to interupt this script ... : " XYZ
-exit 0
+read -p "Check info and input anything to continue OR ctrl+c to interupt this script ... : " XYZ0
 
 # 打上tag
 git tag -m "Auto tag by script." "${VERSION_TAG}"
@@ -122,9 +121,6 @@ if [ $RES -ne 0 ] ; then
     echo "Something wrong!!!"
     exit 1
 fi
-
-cd ../..
-
 
 echo "Your can push tag to origin by using:"
 echo "    git push origin \"${VERSION_TAG}\""

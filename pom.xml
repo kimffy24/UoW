@@ -9,6 +9,8 @@
 	<packaging>jar</packaging>
 
 	<name>uow</name>
+	
+	<description>UoW is means Unit of Work. We can use this toolkit to save the aggregate root easily.</description>
 	<url>https://github.com/kimffy24/UoW/issues</url>
 
 	<scm>
@@ -17,6 +19,23 @@
 		<developerConnection>scm:git:git@github.com:kimffy24/UoW.git</developerConnection>
 <tag>v0.0.1</tag>
 	</scm>
+	
+	<licenses>
+		<license>
+			<name>MIT License</name>
+			<url>https://choosealicense.com/licenses/mit/</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<name>JiefzzLon</name>
+			<email>jiefzz@aliyun.com</email>
+			<organization>freedom</organization>
+			<organizationUrl>https://www.cnblogs.com/jiefzz/</organizationUrl>
+		</developer>
+	</developers>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
