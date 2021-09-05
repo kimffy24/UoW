@@ -20,6 +20,7 @@ import com.github.kimffy24.uow.component.StdConverter;
 import com.github.kimffy24.uow.export.IExecutingContext;
 import com.github.kimffy24.uow.export.mapper.ILocatorMapper;
 import com.github.kimffy24.uow.export.skeleton.AbstractAggregateRoot;
+import com.github.kimffy24.uow.export.skeleton.AggregateRootLifeCycleAware;
 import com.github.kimffy24.uow.repos.Repository;
 import com.github.kimffy24.uow.service.CommittingService;
 import com.github.kimffy24.uow.service.RepositoryProvider;
@@ -90,6 +91,9 @@ public class ExecutingContextFactory {
 		public <T extends AbstractAggregateRoot<?>> T fetch(Object id, Class<T> prototype) {
 			Repository<T> repository = reposProvider.getRepos(prototype);
 			T fetch = repository.fetch(id);
+			if(fetch instanceof AggregateRootLifeCycleAware) {
+				((AggregateRootLifeCycleAware) fetch).postCreation();
+			}
 			return fetch;
 		}
 
@@ -98,6 +102,11 @@ public class ExecutingContextFactory {
 				Class<T> prototype) {
 			Repository<T> repository = reposProvider.getRepos(prototype);
 			List<T> fetchMatched = repository.fetchMatched(conditions);
+			EachUtilx.loop(fetchMatched, f -> {
+				if(f instanceof AggregateRootLifeCycleAware) {
+					((AggregateRootLifeCycleAware) f).postCreation();
+				}
+			});
 			return fetchMatched;
 		}
 
@@ -194,6 +203,13 @@ public class ExecutingContextFactory {
 				// 新增
 				Repository<?> repository = reposProvider.getRepos(newAggr.getClass());
 				ILocatorMapper provideLocatorMapper = repository.provideLocatorMapper();
+				{
+					//在反序列化之前调用用户的前置方法
+					if(newAggr instanceof AggregateRootLifeCycleAware) {
+						((AggregateRootLifeCycleAware) newAggr).preCommit();;
+					}
+				}
+				
 				Map<String, Object> convert = stdConverter.convert(newAggr);
 				convert.put("version", 1);
 				cStore.put(convert, provideLocatorMapper);
@@ -211,6 +227,12 @@ public class ExecutingContextFactory {
 							));
 				Repository repository = reposProvider.getRepos(aggr.getClass());
 				ILocatorMapper provideLocatorMapper = repository.provideLocatorMapper();
+				{
+					//在反序列化之前调用用户的前置方法
+					if(aggr instanceof AggregateRootLifeCycleAware) {
+						((AggregateRootLifeCycleAware) aggr).preCommit();;
+					}
+				}
 
 				Map<String, Object> convert = stdConverter.convert(aggr);
 				Map aggrOriginalDict = repository.getAggrOriginalDict(aggr);
