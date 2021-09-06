@@ -30,7 +30,7 @@ public abstract class AbstractUoWService {
 	 * @return
 	 */
 	protected final <T extends AbstractAggregateRoot<?>> T fetchFromContext(Object id, Class<T> prototype) {
-		return executingContextFactory.getExecutingContext().fetch(id, prototype);
+		return executingContextFactory.getExecutingContext().fetch(prototype, id);
 	}
 
 	/**

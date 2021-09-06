@@ -88,7 +88,7 @@ public class ExecutingContextFactory {
 	public class BasicExecutingContext implements IExecutingContext {
 
 		@Override
-		public <T extends AbstractAggregateRoot<?>> T fetch(Object id, Class<T> prototype) {
+		public <T extends AbstractAggregateRoot<?>> T fetch(Class<T> prototype, Object id) {
 			Repository<T> repository = reposProvider.getRepos(prototype);
 			T fetch = repository.fetch(id);
 			if(fetch instanceof AggregateRootLifeCycleAware) {
@@ -111,10 +111,10 @@ public class ExecutingContextFactory {
 		}
 
 		@Override
-		public void add(AbstractAggregateRoot<?> aggr) {
+		public <T extends AbstractAggregateRoot<?>> T add(T aggr) {
 			logger.warn("This context is not a UoWContext! This add() will do nothing ...");
 			// do nothing
-			
+			return aggr;
 		}
 
 		@Override
@@ -161,8 +161,8 @@ public class ExecutingContextFactory {
 		
 		@SuppressWarnings("unchecked")
 		@Override
-		public <T extends AbstractAggregateRoot<?>> T fetch(Object id, Class<T> prototype) {
-			return (T )MapUtilx.getOrAdd(trackingAggregates, getTypeIdKey(prototype, id), () -> super.fetch(id, prototype));
+		public <T extends AbstractAggregateRoot<?>> T fetch(Class<T> prototype, Object id) {
+			return (T )MapUtilx.getOrAdd(trackingAggregates, getTypeIdKey(prototype, id), () -> super.fetch(prototype, id));
 		}
 		
 		@SuppressWarnings("unchecked")
@@ -185,11 +185,12 @@ public class ExecutingContextFactory {
 		}
 
 		@Override
-		public void add(AbstractAggregateRoot<?> aggr) {
+		public <T extends AbstractAggregateRoot<?>> T add(T aggr) {
 			if(null == newAggr)
 				newAggr = aggr;
 			else
 				throw new RuntimeException("Only one creation or All updating in a Action is permitted!!!");
+			return aggr;
 		}
 
 		@SuppressWarnings({ "rawtypes", "unchecked" })

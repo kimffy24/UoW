@@ -8,16 +8,20 @@ import java.util.Date;
  *
  * @param <TID>
  */
-public class AbstractAggregateRootRL<TID> extends AbstractAggregateRoot<TID> {
+public class SimpleRLAggregateRoot<TID> extends SimpleAggregateRoot<TID> {
 
 	private int deleted = 0;
 	
 	private Date deletedAt = null;
 	
 	private final static Date NoDate = new Date(0l);
-	
-	public AbstractAggregateRootRL() {
+
+	public SimpleRLAggregateRoot() {
 		super();
+	}
+	
+	public SimpleRLAggregateRoot(TID id) {
+		super(id);
 	}
 
 	public void remove() {

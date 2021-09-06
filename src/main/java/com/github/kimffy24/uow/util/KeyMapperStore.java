@@ -14,14 +14,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.springframework.util.StringUtils;
-
 import com.github.kimffy24.uow.annotation.MappingColumn;
 import com.github.kimffy24.uow.annotation.MappingComment;
 import com.github.kimffy24.uow.annotation.MappingType;
 
 import pro.jk.ejoker.common.context.annotation.persistent.PersistentIgnore;
 import pro.jk.ejoker.common.system.enhance.MapUtilx;
+import pro.jk.ejoker.common.system.enhance.StringUtilx;
 import pro.jk.ejoker.common.utils.genericity.GenericDefinedType;
 import pro.jk.ejoker.common.utils.genericity.GenericExpression;
 import pro.jk.ejoker.common.utils.genericity.GenericExpressionFactory;
@@ -97,7 +96,7 @@ public final class KeyMapperStore {
 						MappingComment mappingCommentAnno = gdf.field.getAnnotation(MappingComment.class);
 						MappingColumn annotation = gdf.field.getAnnotation(MappingColumn.class);
 						
-						if(null != mappingType && !StringUtils.isEmpty(mappingType.jdbcType())) {
+						if(null != mappingType && StringUtilx.isSenseful(mappingType.jdbcType())) {
 							jdbcType = mappingType.jdbcType();
 						} else {
 							if(String.class.equals(type)) {
@@ -120,14 +119,14 @@ public final class KeyMapperStore {
 						}
 						
 						String tableColumnComment = "";
-						if(null != mappingCommentAnno && !StringUtils.isEmpty(mappingCommentAnno.value())) {
+						if(null != mappingCommentAnno && StringUtilx.isSenseful(mappingCommentAnno.value())) {
 							tableColumnComment = mappingCommentAnno.value();
 						}
 						
 						TableItem ti;
 						if(null != mappingType) {
 							String tableType = mappingType.tableType();
-							if(StringUtils.isEmpty(tableType)) {
+							if(!StringUtilx.isSenseful(tableType)) {
 								tableType = jdbcType;
 							}
 							String attr = mappingType.tableAttr();
@@ -142,7 +141,7 @@ public final class KeyMapperStore {
 							subColumns.add(item = Item.of(name, jdbcType, useSnack.get()));
 						} else {
 							String column = annotation.value();
-							if(StringUtils.isEmpty(column))
+							if(!StringUtilx.isSenseful(column))
 								throw new RuntimeException(fmt(
 										"Mapping column name is null or empty!!![field: {}, source: {}]",
 										name,

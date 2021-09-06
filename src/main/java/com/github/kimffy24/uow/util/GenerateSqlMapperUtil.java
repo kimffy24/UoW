@@ -3,13 +3,18 @@ package com.github.kimffy24.uow.util;
 import static pro.jk.ejoker.common.system.enhance.StringUtilx.fmt;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import com.github.kimffy24.uow.annotation.RBind;
+import com.github.kimffy24.uow.export.skeleton.AbstractAggregateRoot;
 import com.github.kimffy24.uow.util.KeyMapperStore.Item;
+
+import pro.jk.ejoker.common.system.enhance.EachUtilx;
 
 /**
  */
@@ -30,10 +35,33 @@ public class GenerateSqlMapperUtil {
     private final static Set<String> NumberTypeSet =
     		new HashSet<>(Arrays.asList("TINYINT", "SMALLINT", "INTEGER", "BIGINT"));
 
-    public static void generateSqlMapper(Class<?> mapper, Class<?> prototype, String tableName, String... keys) throws IOException{
+    /**
+     * 虽然我想做复合主键的支持，但我又不想做。花大功夫满足小场景 <br />
+     * 搁置吧，只支持单个ID
+     * @param prototype
+     * @param tableName
+     * @param keys
+     * @throws IOException
+     */
+    public static void generateSqlMapper(Class<? extends AbstractAggregateRoot<?>> prototype, String tableName, String... keys) throws IOException{
+    	
+    	RBind annotationRB = prototype.getAnnotation(RBind.class);
+    	if(null == annotationRB) {
+    		throw new RuntimeException("This AggregateRoot Type has no @RBind info !!!");
+    	}
+    	
+    	Class<?> mapper = annotationRB.value();
 
-        if(null == keys || 0 ==keys.length)
-        	throw new RuntimeException("At latest one key provider is required!!!");
+        if(null == keys || 0 ==keys.length) {
+        	AbstractAggregateRoot<?> newInstance;
+        	try {
+				newInstance = prototype.newInstance();
+			} catch (InstantiationException | IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+        	keys = new String[] { newInstance.getIdFieldName() };
+        }
+        
 		Set<String> keys_ = new HashSet<String>();
 		for(String k : keys) {
 			keys_.add(k);
@@ -48,6 +76,24 @@ public class GenerateSqlMapperUtil {
 	        if(null == tableName || "".equals(tableName)){
 	            // 未传表明默认用类名
 	            tableName = prototype.getSimpleName();
+	        }
+	        
+	        {
+	        	// 找出id列并前置
+		        List<Item> idItem = new ArrayList<>(keys_.size());
+		        EachUtilx.eliminate(columns, i -> {
+		        	if(keys_.contains(i.key)) {
+		        		idItem.add(i);
+		        		return true;
+		        	}
+		        	return false;
+		        });
+		        
+		        List<Item> idItemNewOrder = new ArrayList<>();
+		        idItemNewOrder.addAll(idItem);
+		        idItemNewOrder.addAll(columns);
+		        
+		        columns = idItemNewOrder;
 	        }
 	        
 	        String sqlField = "";
@@ -120,7 +166,7 @@ public class GenerateSqlMapperUtil {
 			String sqlField = next.sqlClName;
 			String jdbcType = next.jdbcType;
 			apd(resultMap, 2, fmt("<{} column=\"{}\" jdbcType=\"{}\" property=\"{}\" />",
-					(latestKey.contains(sqlField) ? "id" : "result"),
+					(latestKey.contains(fieldName) ? "id" : "result"),
 					sqlField,
 					jdbcType,
 					fieldName

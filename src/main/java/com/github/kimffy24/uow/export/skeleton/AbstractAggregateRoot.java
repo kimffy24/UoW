@@ -1,5 +1,6 @@
 package com.github.kimffy24.uow.export.skeleton;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -14,38 +15,37 @@ import pro.jk.ejoker.common.utils.genericity.GenericDefinedType;
 import pro.jk.ejoker.common.utils.genericity.GenericExpression;
 import pro.jk.ejoker.common.utils.genericity.GenericExpressionFactory;
 
-public class AbstractAggregateRoot<TID> {
-
-	protected TID id;
+public abstract class AbstractAggregateRoot<TID> {
 	
+	private final static Set<String> __ignore_fields__ = new HashSet<>(Arrays.asList("_dirty_", "_originalStatus_", "_idType_"));
+
+//	@MappingComment("UoW对象版本。会随着业务变更递增")
 	protected int version = 0;
 
 	@PersistentIgnore
-	private boolean _dirty = false;
+	private boolean _dirty_ = false;
 	
 	@PersistentIgnore
-	private Map<String, Object> _originalStatus = null;
+	private Map<String, Object> _originalStatus_ = null;
 
 	@PersistentIgnore
-	protected final Class<TID> _idType;
+	protected final Class<TID> _idType_;
 
 	@Override
 	public String toString() {
-		AARParse aarParse = aarParseStore.get(this.getClass());
-		if(null == aarParse)
-			return super.toString();
-		return aarParse._toStringFactor.trigger(this);
+		ARParse aarParse;
+		return null != (aarParse = arParseStore.get(this.getClass())) ? aarParse._toStringFactor.trigger(this) : super.toString();
 	}
 	
 	protected AbstractAggregateRoot(TID id) {
 		this();
-		this.id = id;
+		this.setId(id);
 	}
 
 	protected AbstractAggregateRoot() {
-		AARParse aarParse;
+		ARParse arParse;
 		Class<? extends AbstractAggregateRoot<?>> aggrType = (Class<? extends AbstractAggregateRoot<?>> )this.getClass();
-		if(null == (aarParse = aarParseStore.get(aggrType))) {
+		if(null == (arParse = arParseStore.get(aggrType))) {
 			GenericExpression genericExpress = GenericExpressionFactory.getGenericExpressDirectly(this.getClass());
 			GenericExpression parent = genericExpress;
 			while(!AbstractAggregateRoot.class.equals(parent.getDeclarePrototype())) {
@@ -57,25 +57,25 @@ public class AbstractAggregateRoot<TID> {
 			if(null == idClass || !AcceptableIdType.contains(idClass)) {
 				throw new RuntimeException(StringUtilx.fmt("Wrong Aggregate Root id type!!! [type: {}]", idClass));
 			}
-	
-			AARParse previous = aarParseStore.putIfAbsent(aggrType, aarParse = new AARParse(idClass, aggr -> {
+
+			ARParse previous = arParseStore.putIfAbsent(aggrType, arParse = new ARParse(idClass, aggr -> {
 				String simpleName = aggr.getClass().getSimpleName();
 				StringBuilder sb = new StringBuilder();
 				sb.append(simpleName);
 				sb.append("{");
-	
+
 				StringBuilder sbId = new StringBuilder();
 				StringBuilder sbVersion = new StringBuilder();
 				StringBuilder sbOther = new StringBuilder();
 				StringBuilder sbTypeInfo = new StringBuilder();
 				genericExpress.forEachFieldExpressionsDeeply((name, gdf) -> {
 					try {
-						if("_originalStatus".equals(name))
+						if("_originalStatus_".equals(name))
 							return;
 						StringBuilder sb_;
-						if("id".equals(name)) sb_=sbId;
-						else if("version".equals(name)) sb_=sbVersion;
-						else if(name.startsWith("_")) sb_=sbTypeInfo;
+						if("version".equals(name)) sb_=sbVersion;
+						else if(name.equals(aggr.getIdFieldName())) sb_=sbId;
+						else if(__ignore_fields__.contains(name)) sb_=sbTypeInfo;
 						else sb_=sbOther;
 						Object target = gdf.field.get(aggr);
 						if(null != target) {
@@ -99,16 +99,29 @@ public class AbstractAggregateRoot<TID> {
 			}));
 			
 			if(null != previous)
-				aarParse = previous;
+				arParse = previous;
 		}
 
-		this._idType = (Class<TID> )aarParse._idType;
+		this._idType_ = (Class<TID> )arParse._idType;
 		
 	}
 
-	public TID getId() {
-		return id;
-	}
+	/**
+	 * 用户侧自定义编码中的自增主键一定要是包装类啊，且不能设置初始值！<br />
+	 * 不然数据库无法生成自增id
+	 * 
+	 * @param id
+	 */
+	abstract protected void setId(TID id);
+	
+	abstract public TID getId();
+
+	/**
+	 * 指定idField的名字 <br />
+	 * 后期改为注解？ 感觉用注解也没特别大的提升(体验或效率)
+	 * @return
+	 */
+	abstract public String getIdFieldName();
 
 	public int getVersion() {
 		return version;
@@ -124,10 +137,10 @@ public class AbstractAggregateRoot<TID> {
 		AcceptableIdType.add(String.class);
 		
 		AggregateActionBinder.registerOriginalDictAccessor(
-				ar -> ar._originalStatus,
-				(ar, d) -> ar._originalStatus = d,
+				ar -> ar._originalStatus_,
+				(ar, d) -> ar._originalStatus_ = d,
 				(ar, i) -> {
-					Class<?> idType = ((AbstractAggregateRoot)ar)._idType;
+					Class<?> idType = ((AbstractAggregateRoot )ar)._idType_;
 					Object idValue;
 					if(idType.equals(i.getClass())) {
 						idValue = i;
@@ -146,24 +159,23 @@ public class AbstractAggregateRoot<TID> {
 									)) ;
 						}
 					}
-					((AbstractAggregateRoot)ar).id = idValue;
+					((AbstractAggregateRoot )ar).setId(idValue);
 				},
-				ar -> ar._dirty,
-				ar -> ar._dirty = true
+				ar -> ar._dirty_,
+				ar -> ar._dirty_ = true
 				);
 	}
 	
-	private final static class AARParse {
+	private final static class ARParse {
 
 		public final Class<?> _idType;
 		public final IFunction1<String, AbstractAggregateRoot<?>> _toStringFactor;
-		public AARParse(Class<?> _idType, IFunction1<String, AbstractAggregateRoot<?>> _toStringFactor) {
+		public ARParse(Class<?> _idType, IFunction1<String, AbstractAggregateRoot<?>> _toStringFactor) {
 			this._idType = _idType;
 			this._toStringFactor = _toStringFactor;
 		}
 		
 	}
 	
-	private final static Map<Class<? extends AbstractAggregateRoot<?>>, AARParse> aarParseStore
-		= new ConcurrentHashMap<>();
+	private final static Map<Class<? extends AbstractAggregateRoot<?>>, ARParse> arParseStore = new ConcurrentHashMap<>();
 }
