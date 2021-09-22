@@ -184,17 +184,17 @@ public class GenerateSqlMapperUtil {
 
 //		StringBuilder sbx = new StringBuilder();
 //		{
+//			List<String> cns = new ArrayList<>();
 //			for(Item fi : columns) {
-//				if(fi == idItem)
-//					continue;
-//				fi.
+//				cns.add(fi.sqlClName);
 //			}
+//			sbx.append(String.join(", ", cns));
 //		}
 		
 		String dataSetKey = "data";
 		{
 			apd(sb, 1, "<select id=\"fetchById\" resultType=\"map\">");
-			apd(sb, 2, fmt("SELECT * FROM `{}`", tableName));
+			apd(sb, 2, fmt("SELECT {} FROM `{}`", "<include refid=\"Base_Column_List\" />", tableName));
 			apd(sb, 2, "<where>");
 			apd(sb, 3, idItem.buildFilter("="));
 			apd(sb, 2, "</where>");
