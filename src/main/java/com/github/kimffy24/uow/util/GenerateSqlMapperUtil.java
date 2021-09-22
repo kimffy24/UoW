@@ -182,6 +182,15 @@ public class GenerateSqlMapperUtil {
 		String idKey = latestKey.iterator().next();
 		Item idItem = columns.stream().filter(i -> idKey.equals(i.key)).findFirst().get();
 
+//		StringBuilder sbx = new StringBuilder();
+//		{
+//			for(Item fi : columns) {
+//				if(fi == idItem)
+//					continue;
+//				fi.
+//			}
+//		}
+		
 		String dataSetKey = "data";
 		{
 			apd(sb, 1, "<select id=\"fetchById\" resultType=\"map\">");

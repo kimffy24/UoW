@@ -1,8 +1,10 @@
 package com.github.kimffy24.uow.export.skeleton;
 
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -11,7 +13,6 @@ import com.github.kimffy24.uow.core.AggregateActionBinder;
 import pro.jk.ejoker.common.context.annotation.persistent.PersistentIgnore;
 import pro.jk.ejoker.common.system.enhance.StringUtilx;
 import pro.jk.ejoker.common.system.functional.IFunction1;
-import pro.jk.ejoker.common.utils.genericity.GenericDefinedType;
 import pro.jk.ejoker.common.utils.genericity.GenericExpression;
 import pro.jk.ejoker.common.utils.genericity.GenericExpressionFactory;
 
@@ -51,11 +52,27 @@ public abstract class AbstractAggregateRoot<TID> {
 			while(!AbstractAggregateRoot.class.equals(parent.getDeclarePrototype())) {
 				parent = parent.getParent();
 			}
-			GenericDefinedType[] deliveryTypeMetasTableCopy = parent.getChild().genericDefination.getDeliveryTypeMetasTableCopy();
-			GenericDefinedType genericT = deliveryTypeMetasTableCopy[0];
-			Class<TID> idClass = (Class<TID> )genericT.rawClazz;
-			if(null == idClass || !AcceptableIdType.contains(idClass)) {
-				throw new RuntimeException(StringUtilx.fmt("Wrong Aggregate Root id type!!! [type: {}]", idClass));
+//			GenericDefinedType[] deliveryTypeMetasTableCopy = parent.getChild().genericDefination.getDeliveryTypeMetasTableCopy();
+//			GenericDefinedType genericT = deliveryTypeMetasTableCopy[0];
+//			Class<TID> idClass = (Class<TID> )genericT.rawClazz;
+			Class<TID> idClass = null;
+			{
+				Type tidTypeDef = parent.typeOf("TID");
+				if(tidTypeDef instanceof Class) {
+					idClass = (Class<TID> )tidTypeDef;
+				} else {
+					// 暂时不接受泛型嵌套泛型
+					throw new RuntimeException(StringUtilx.fmt(
+							"Unsupport use a generic type as Aggregate Root id type!!! [target: {}, idType: {}]",
+							genericExpress.expressSignature,
+							Objects.toString(tidTypeDef)));
+				}
+			}
+			if(!AcceptableIdType.contains(idClass)) {
+				throw new RuntimeException(StringUtilx.fmt("Wrong Aggregate Root id type!!! [target: {}, idType: {}, acceptableType: {}]",
+						genericExpress.expressSignature,
+						idClass.toString(),
+						Objects.toString(AcceptableIdType)));
 			}
 
 			ARParse previous = arParseStore.putIfAbsent(aggrType, arParse = new ARParse(idClass, aggr -> {
