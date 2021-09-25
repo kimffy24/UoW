@@ -15,6 +15,8 @@ import com.github.kimffy24.uow.export.skeleton.AbstractAggregateRoot;
 import com.github.kimffy24.uow.util.KeyMapperStore.Item;
 
 import pro.jk.ejoker.common.system.enhance.EachUtilx;
+import pro.jk.ejoker.common.system.functional.IFunction1;
+import pro.jk.ejoker.common.system.functional.IVoidFunction1;
 
 /**
  */
@@ -44,13 +46,32 @@ public class GenerateSqlMapperUtil {
      * @throws IOException
      */
     public static void generateSqlMapper(Class<? extends AbstractAggregateRoot<?>> prototype, String tableName, String... keys) throws IOException{
+    	generateSqlMapperF(
+    			System.out::println,
+    			System.out::println,
+    			p -> {
+		    		// 默认的Mapper获取方式
+		        	RBind annotationRB = p.getAnnotation(RBind.class);
+		        	if(null == annotationRB) {
+		        		throw new RuntimeException("This AggregateRoot Type has no @RBind info !!!");
+		        	}
+		        	Class<?> mapper = annotationRB.value();
+		        	return mapper.getName();
+		    	},
+    			prototype,
+    			tableName,
+    			keys);
+    }
+
+    public static void generateSqlMapperF(
+    		IVoidFunction1<StringBuilder> sqlHandler,
+    		IVoidFunction1<StringBuilder> mapperHandler,
+    		IFunction1<String, Class<? extends AbstractAggregateRoot<?>>> MapperClassProvider,
+    		Class<? extends AbstractAggregateRoot<?>> prototype,
+			String tableName,
+			String... keys) throws IOException{
     	
-    	RBind annotationRB = prototype.getAnnotation(RBind.class);
-    	if(null == annotationRB) {
-    		throw new RuntimeException("This AggregateRoot Type has no @RBind info !!!");
-    	}
-    	
-    	Class<?> mapper = annotationRB.value();
+    	String mapperClassName = MapperClassProvider.trigger(prototype);
 
         if(null == keys || 0 ==keys.length) {
         	AbstractAggregateRoot<?> newInstance;
@@ -118,7 +139,7 @@ public class GenerateSqlMapperUtil {
 	        sqlField += String.format(PkeyTpl, String.join(", ", latestKey));
 	
 	        sql.append(String.format(CreateSqlTpl, tableName, tableName, sqlField));
-	        System.out.println(sql);
+	        sqlHandler.trigger(sql);
     	}
     	
 
@@ -126,7 +147,7 @@ public class GenerateSqlMapperUtil {
 		{
 			apd(sb2, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
 			apd(sb2, "<!DOCTYPE mapper PUBLIC \"-//mybatis.org//DTD Mapper 3.0//EN\" \"http://mybatis.org/dtd/mybatis-3-mapper.dtd\">");
-			apd(sb2, fmt("<mapper namespace=\"{}\">", mapper.getName()));
+			apd(sb2, fmt("<mapper namespace=\"{}\">", mapperClassName));
 			apd(sb2, "");
 
 			apd(sb2, getSqlColumnList(columns));
@@ -137,7 +158,7 @@ public class GenerateSqlMapperUtil {
 			apd(sb2, "</mapper>");
 		}
 
-		System.out.println(sb2);
+		mapperHandler.trigger(sb2);
 	}
 
     private static String getSqlColumnList(List<Item> columns) {
