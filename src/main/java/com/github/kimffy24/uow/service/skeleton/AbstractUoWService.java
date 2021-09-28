@@ -13,14 +13,21 @@ import com.github.kimffy24.uow.service.CommittingService.IClosure;
 import pro.jk.ejoker.common.system.enhance.StringUtilx;
 import pro.jk.ejoker.common.system.functional.IVoidFunction;
 
-@Deprecated
+/**
+ * 这是一个简单的UoW服务类骨架；<br />
+ * 让你的服务类继承这个基类，即会注入UoW相应的服务对象；<br />
+ * 但是需要注意，这并不能完全让你的业务类工作做UoW上下文中；<br />
+ * 必须通过本类的保护方法doUnderContext来发起，把你的服务方法包装为函子传入即可<br /><br />
+ *
+ * 另外提供4组保护方法用于简化访问
+ */
 public abstract class AbstractUoWService {
 
 	@Autowired
-	private ExecutingContextFactory executingContextFactory;
+	protected ExecutingContextFactory executingContextFactory;
 	
 	@Autowired
-	private CommittingService autoCommittingService; 
+	protected CommittingService autoCommittingService;
 
 	/**
 	 * 按照主键id在持久层查找出对象
@@ -75,7 +82,7 @@ public abstract class AbstractUoWService {
 	 * @param aggr
 	 */
 	protected final void addToContext(AbstractAggregateRoot<?> aggr) {
-		executingContextFactory.getUoWContext(false).add(aggr);
+		executingContextFactory.getExecutingContext().add(aggr);
 	}
 	
 //	/**
