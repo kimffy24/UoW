@@ -144,13 +144,13 @@ public class SpringUoWMapperProvider implements ApplicationContextAware, Applica
 							genRBinderProvider.getPrefixclasspath()
 							+ "/"
 							+ genRBinderProvider.getJsonConfigFileName()))) {
-				logger.warn("No UoW rbind info provider found.");
+				logger.warn("No UoW rbind info provider found!");
 				uowGenRBindInfo = new HashMap<>();
 				return;
 			}
 			ClassPathResource resource = new ClassPathResource(genPath);
 			if(!resource.exists()) {
-				logger.warn("Can not load UoW bind info. [path: {}]", genPath);
+				logger.warn("Can not load UoW bind info, gen file is not exists! [path: {}]", genPath);
 				uowGenRBindInfo = new HashMap<>();
 				return;
 			}
@@ -161,7 +161,7 @@ public class SpringUoWMapperProvider implements ApplicationContextAware, Applica
 				} else {
 					throw new RuntimeException("uow-gen-rbind-info.json has wrong format !!!");
 				}
-				logger.warn("Load UoW bind info. [path: {}]", genPath);
+				logger.info("Load UoW bind info successfully. [path: {}]", genPath);
 			} catch (IOException e) {
 				throw new IOExceptionOnRuntime(e);
 			}
