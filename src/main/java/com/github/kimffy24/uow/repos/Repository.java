@@ -5,8 +5,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.github.kimffy24.uow.component.StdConverter;
@@ -17,7 +19,6 @@ import com.github.kimffy24.uow.service.SpringUoWMapperProvider;
 import com.github.kimffy24.uow.util.KeyMapperStore.Item;
 
 import pro.jk.ejoker.common.system.functional.IFunction;
-import pro.jk.ejoker.common.system.functional.IFunction1;
 import pro.jk.ejoker.common.system.functional.IVoidFunction1;
 
 public class Repository <T extends AbstractAggregateRoot<?>> {
@@ -29,6 +30,8 @@ public class Repository <T extends AbstractAggregateRoot<?>> {
 	private final IFunction<IVoidFunction1<Map<String, Object>>> preModifierLocator;
 	
 	private final Class<T> aggrRootType;
+	
+	private final Set<String> keys;
 	
 	/**
 	 * do not modify!
@@ -45,6 +48,15 @@ public class Repository <T extends AbstractAggregateRoot<?>> {
 		this.preModifierLocator = preModifierLocator;
 		this.aggrRootType = aggrRootType;
 		this.anaResult = anaResult;
+
+		// TODO 暂不支持多主键
+		keys = new LinkedHashSet<>();
+		try {
+			T tempAggr = aggrRootType.newInstance();
+			keys.add(tempAggr.getIdFieldName());
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
 	}
 	
 	private T revertToAggr(Map<String, Object> originalDict) {
@@ -82,7 +94,7 @@ public class Repository <T extends AbstractAggregateRoot<?>> {
 			// 针对mysql时间类型作调整
 			if(value instanceof Timestamp)
 				entry.setValue(new Date(((Timestamp )value).getTime()));
-			if("id".equals(entry.getKey())) {
+			if(keys.contains(entry.getKey())) {
 				// mysql驱动返回的类型，不一定跟java内的一致
 				entry.setValue(id);
 			}
@@ -102,7 +114,8 @@ public class Repository <T extends AbstractAggregateRoot<?>> {
 		List<Map<String, Object>> mi = provideLocatorMapper.locateId(match);
 		if(null == mi || mi.isEmpty())
 			return new ArrayList<>();
-		return mi.stream().map(i -> Repository.this.fetch(i.get("id"))).collect(Collectors.toList());
+		// TODO 暂不支持多主键
+		return mi.stream().map(i -> Repository.this.fetch(i.get(keys.iterator().next()))).collect(Collectors.toList());
 	}
 	
 //	public void add(T aggr) {

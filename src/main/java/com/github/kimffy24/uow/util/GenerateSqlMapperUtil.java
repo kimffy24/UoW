@@ -81,6 +81,10 @@ public class GenerateSqlMapperUtil {
 			keys_.add(k);
 		}
 
+		// TODO 暂不支持多主键
+		if(keys_.size()>1)
+			throw new RuntimeException("UoW is not support multi-keys temporarily!!!");
+
 		Set<String> latestKey = new HashSet<>();
 
 		List<Item> columns = KeyMapperStore.getIntance().getAnaResult(prototype);
@@ -121,7 +125,8 @@ public class GenerateSqlMapperUtil {
 					latestKey.add("`" + sqlName + "`");
 				}
 
-				if (1 == keys.length && "id".equals(fName) && NumberTypeSet.contains(c.tableItem.tableType)) {
+				// TODO 暂不支持多主键
+				if (1 == keys_.size() && keys_.contains(fName) && NumberTypeSet.contains(c.tableItem.tableType)) {
 					sqlField += String.format(FieldTpl, sqlName, c.tableItem.tableType, "NOT NULL AUTO_INCREMENT",
 							"自增主键");
 				} else {
