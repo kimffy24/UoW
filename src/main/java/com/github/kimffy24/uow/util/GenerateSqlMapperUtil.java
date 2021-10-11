@@ -96,7 +96,9 @@ public class GenerateSqlMapperUtil {
 	        StringBuilder sql = new StringBuilder();
 	        if(null == tableName || "".equals(tableName)){
 	            // 未传表明默认用类名
-	            tableName = prototype.getSimpleName();
+	            tableName = KeyMapperStore.humpToLine2(prototype.getSimpleName());
+	            if(tableName.charAt(0) == '_')
+	            	tableName = tableName.substring(1);
 	        }
 	        
 	        {
