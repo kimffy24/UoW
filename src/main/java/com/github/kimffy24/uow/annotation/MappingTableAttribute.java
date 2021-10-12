@@ -9,19 +9,21 @@ import java.lang.annotation.Target;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 
-import com.github.kimffy24.uow.export.mapper.ILocatorMapper;
-
-/**
- * @deprecated 改为由uow-codegen承担这个职责
- * @author kimffy
- *
- */
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface RBind {
+public @interface MappingTableAttribute {
 
-    Class<? extends ILocatorMapper> value();
+	/**
+	 * 映射的表名
+	 * @return
+	 */
+	public String tableName() default "";
 	
+	/**
+	 * 在uow-gen-all.sql中的建表语句后追加的语句
+	 * @return
+	 */
+	public String[] alterAppends() default {};
 }

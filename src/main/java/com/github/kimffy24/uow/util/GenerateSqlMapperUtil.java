@@ -10,11 +10,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import com.github.kimffy24.uow.annotation.MappingTableAttribute;
 import com.github.kimffy24.uow.annotation.RBind;
 import com.github.kimffy24.uow.export.skeleton.AbstractAggregateRoot;
 import com.github.kimffy24.uow.util.KeyMapperStore.Item;
 
 import pro.jk.ejoker.common.system.enhance.EachUtilx;
+import pro.jk.ejoker.common.system.enhance.StringUtilx;
 import pro.jk.ejoker.common.system.functional.IFunction1;
 import pro.jk.ejoker.common.system.functional.IVoidFunction1;
 
@@ -90,12 +92,20 @@ public class GenerateSqlMapperUtil {
 		List<Item> columns = KeyMapperStore.getIntance().getAnaResult(prototype);
 
 		{
+			MappingTableAttribute annotationTA = prototype.getAnnotation(MappingTableAttribute.class);
+			
 			StringBuilder sql = new StringBuilder();
-			if (null == tableName || "".equals(tableName)) {
-				// 未传表明默认用类名
-				tableName = KeyMapperStore.humpToLine2(prototype.getSimpleName());
-				if (tableName.charAt(0) == '_')
-					tableName = tableName.substring(1);
+			// 未传表名
+			if (!StringUtilx.isSenseful(tableName)) {
+				if(null != annotationTA && StringUtilx.isSenseful(annotationTA.tableName())) {
+					// 如果有使用 @MappingTableAttribute 注解，并提供了表名，则用它
+					tableName = annotationTA.tableName();
+				} else {
+					// 最兜底方案，使用类名小驼峰
+					tableName = KeyMapperStore.humpToLine2(prototype.getSimpleName());
+					if (tableName.charAt(0) == '_')
+						tableName = tableName.substring(1);
+				}
 			}
 
 			{
@@ -137,6 +147,25 @@ public class GenerateSqlMapperUtil {
 			sqlField += String.format(PkeyTpl, String.join(", ", latestKey));
 
 			sql.append(String.format(CreateSqlTpl, tableName, tableName, sqlField));
+			
+			{
+				// 建表后追加其他语句（兼容）
+				if(null != annotationTA) {
+					String _tableName = "`" + tableName + "`";
+					String[] alterAppends = annotationTA.alterAppends();
+					EachUtilx.loop(alterAppends, s -> {
+//						sql.append('\n');
+						s = s.trim();
+						if(s.indexOf('{') + 1 == s.indexOf('}')) {
+							s = fmt(s, _tableName);
+						}
+						sql.append(s + ";\n");
+					});
+				}
+
+				sql.append('\n');
+			}
+			
 			sqlHandler.trigger(sql);
 		}
 
